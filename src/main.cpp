@@ -9,13 +9,11 @@
 #define CONTROL_PIN_DOWN GPIO_NUM_12  // Define GPIO pin for control down
 
 static const bool debug = false;  // Set to true for debugging output
-static const bool use_serial = true;
-static const uint64_t control_timer_period = 100000;  // Control timer period in microseconds
+static const bool use_serial = false;
 
 static TimerHandle_t poll_distances_timer = NULL;
-static hw_timer_t* control_timer = NULL;  // Timer for control task
-static portMUX_TYPE spinlock = portMUX_INITIALIZER_UNLOCKED;
 static QueueHandle_t wifi_event_queue;
+static SemaphoreHandle_t control_semaphore = NULL;
 
 static DistanceArraySensor distance_sensor;
 static PlaneEstimator plane_estimator(8, 8);
@@ -44,9 +42,8 @@ void pollDistancesCallback(TimerHandle_t xTimer)
         const float estimated_distance = plane_estimator.estimatedDistanceToPlane();
         if (estimated_distance > 0)
         {
-            taskENTER_CRITICAL(&spinlock);
             distance_controller.updateDistanceToPlane(estimated_distance);
-            taskEXIT_CRITICAL(&spinlock);
+            xSemaphoreGive(control_semaphore);
         }
         printDebug("Estimated distance to plane: " + String(estimated_distance));
     }
@@ -56,16 +53,24 @@ void pollDistancesCallback(TimerHandle_t xTimer)
     }
 }
 
-void IRAM_ATTR controlCallback()
+void controlTask(void* pvParameters)
 {
-    distance_controller.updateControlLoop();
-    if (distance_controller.isControlling())
+    while (true)
     {
-        digitalWrite(LED_BUILTIN, HIGH);
-    }
-    else
-    {
-        digitalWrite(LED_BUILTIN, LOW);
+        // Wait for the semaphore to be given by the timer callback
+        if (xSemaphoreTake(control_semaphore, portMAX_DELAY) == pdTRUE)
+        {
+            distance_controller.updateControlLoop();
+            if (distance_controller.isControlling())
+            {
+                digitalWrite(LED_BUILTIN, HIGH);
+            }
+            else
+            {
+                digitalWrite(LED_BUILTIN, LOW);
+            }
+        }
+        vTaskDelay(pdMS_TO_TICKS(100));  // Control loop delay
     }
 }
 
@@ -106,9 +111,7 @@ void serialControlTask(void* pvParameters)
                     Serial.print("\r\n");
                     // Extract height value from command
                     const float height_mm = atof(cmd_buf + 4);
-                    portENTER_CRITICAL(&spinlock);
                     distance_controller.setTargetHeight(height_mm);
-                    portEXIT_CRITICAL(&spinlock);
                 }
 
                 // Reset receive buffer and index counter
@@ -144,9 +147,7 @@ void webServerTask(void* pvParameters)
                     float new_height = web_server.getNewHeight();
                     if (new_height > 0.0)
                     {
-                        portENTER_CRITICAL(&spinlock);
                         distance_controller.setTargetHeight(200);
-                        portEXIT_CRITICAL(&spinlock);
                         Serial.print("New height set: ");
                         Serial.println(new_height);
                     }
@@ -227,6 +228,12 @@ void setup()
     Serial.begin(115200);
     vTaskDelay(pdMS_TO_TICKS(1000));
     printDebug("Starting desktop height controller...");
+    control_semaphore = xSemaphoreCreateBinary();
+    if (control_semaphore == NULL)
+    {
+        printDebug("Failed to create control semaphore.");
+        exit(1);
+    }
     if (!use_serial)
     {
         wifi_event_queue = xQueueCreate(5, sizeof(WiFiEvent_t));
@@ -255,11 +262,7 @@ void setup()
         printDebug("Started web server task");
     }
 
-    control_timer = timerBegin(0, 80, true);
-    timerAttachInterrupt(control_timer, controlCallback, true);
-    timerAlarmWrite(control_timer, control_timer_period, true);
-    timerAlarmEnable(control_timer);
-    printDebug("Control timer started");
+    xTaskCreate(controlTask, "Control Task", 2048, NULL, 3, NULL);
 
     // Delete setup and loop tasks
     vTaskDelete(NULL);
