@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <WiFi.h>
+#include <WebServer.h>
 #include "distance_array_sensor.h"
 #include "distance_controller.h"
 #include "plane_estimator.h"
@@ -18,10 +20,14 @@ static SemaphoreHandle_t control_semaphore = NULL;
 static DistanceArraySensor distance_sensor;
 static PlaneEstimator plane_estimator(8, 8);
 static DistanceController distance_controller(CONTROL_PIN_UP, CONTROL_PIN_DOWN);
-static WebServer web_server;
 
 static const int CMD_BUF_LEN = 255;
 static const int USER_INTERFACE_LOOP_DELAY = 20;  // Delay for user interface loop in milliseconds
+
+
+char XML[2048];
+char buf[32];
+static WebServer server(80);
 
 void printDebug(const String& message)
 {
@@ -61,14 +67,14 @@ void controlTask(void* pvParameters)
         if (xSemaphoreTake(control_semaphore, portMAX_DELAY) == pdTRUE)
         {
             distance_controller.updateControlLoop();
-            if (distance_controller.isControlling())
-            {
-                digitalWrite(LED_BUILTIN, HIGH);
-            }
-            else
-            {
-                digitalWrite(LED_BUILTIN, LOW);
-            }
+            // if (distance_controller.isControlling())
+            // {
+            //     digitalWrite(LED_BUILTIN, HIGH);
+            // }
+            // else
+            // {
+            //     digitalWrite(LED_BUILTIN, LOW);
+            // }
         }
         vTaskDelay(pdMS_TO_TICKS(100));  // Control loop delay
     }
@@ -129,44 +135,44 @@ void serialControlTask(void* pvParameters)
     }
 }
 
-void webServerTask(void* pvParameters)
-{
-    WiFiClient client;
-    while (true)
-    {
-        if (client)
-        {
-            Serial.println("Client connected.");
-            while (client.connected())
-            {
-                WebServer::CommandType command =
-                    web_server.handleClient(client, distance_controller.getEstimatedDistanceToPlane());
-                if (command == WebServer::CommandType::SET_HEIGHT)
-                {
-                    Serial.println("Setting new height from web server.");
-                    float new_height = web_server.getNewHeight();
-                    if (new_height > 0.0)
-                    {
-                        distance_controller.setTargetHeight(200);
-                        Serial.print("New height set: ");
-                        Serial.println(new_height);
-                    }
-                }
-                vTaskDelay(pdMS_TO_TICKS(USER_INTERFACE_LOOP_DELAY));
-            }
-            Serial.println("Client disconnected.");
-        }
-        else
-        {
-            client = web_server.newClientConnection();
-            if (client)
-            {
-                Serial.println("New client connection.");
-            }
-        }
-        vTaskDelay(pdMS_TO_TICKS(USER_INTERFACE_LOOP_DELAY));  // Handle client every 100 ms
-    }
-}
+// void webServerTask(void* pvParameters)
+// {
+//     WiFiClient client;
+//     while (true)
+//     {
+//         if (client)
+//         {
+//             Serial.println("Client connected.");
+//             while (client.connected())
+//             {
+//                 WebServer::CommandType command =
+//                     web_server.handleClient(client, distance_controller.getEstimatedDistanceToPlane());
+//                 if (command == WebServer::CommandType::SET_HEIGHT)
+//                 {
+//                     Serial.println("Setting new height from web server.");
+//                     float new_height = web_server.getNewHeight();
+//                     if (new_height > 0.0)
+//                     {
+//                         distance_controller.setTargetHeight(200);
+//                         Serial.print("New height set: ");
+//                         Serial.println(new_height);
+//                     }
+//                 }
+//                 vTaskDelay(pdMS_TO_TICKS(USER_INTERFACE_LOOP_DELAY));
+//             }
+//             Serial.println("Client disconnected.");
+//         }
+//         else
+//         {
+//             client = web_server.newClientConnection();
+//             if (client)
+//             {
+//                 Serial.println("New client connection.");
+//             }
+//         }
+//         vTaskDelay(pdMS_TO_TICKS(USER_INTERFACE_LOOP_DELAY));  // Handle client every 100 ms
+//     }
+// }
 
 void connectToWifi()
 {
@@ -178,11 +184,12 @@ void connectToWifi()
     while (WiFi.status() != WL_CONNECTED)
     {
         WiFi.disconnect();
-        web_server = WebServer(WIFI_SSID, WIFI_PASSWORD);
+        WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+        // web_server = WebServer(WIFI_SSID, WIFI_PASSWORD);
         Serial.println("GFV - Waiting on wifi connection");
         vTaskDelay(xTicksToWait);
     }
-    web_server.begin();
+    // web_server.begin();
 }
 
 void onWifiEvent(WiFiEvent_t event)
@@ -219,6 +226,70 @@ void handleWifiEvent(void* pvParameters)
                 break;
         }
     }
+}
+
+// TODO: Move these XML handlers to web_server class
+// TODO: Change buttons to control the desktop height
+void ButtonPress0Start() {
+    digitalWrite(BUILTIN_LED, HIGH);
+    Serial.println("Button 0 pressed");
+}
+
+void ButtonPress0Stop() {
+    digitalWrite(BUILTIN_LED, LOW);
+    Serial.println("Button 0 released");
+}
+
+void ButtonPress1Start() {
+    digitalWrite(BUILTIN_LED, HIGH);
+    Serial.println("Button 1 pressed");
+}
+
+void ButtonPress1Stop() {
+    digitalWrite(BUILTIN_LED, LOW);
+    Serial.println("Button 1 released");
+}
+
+void SendWebsite() {
+  Serial.println("sending web page");
+  server.send(200, "text/html", PAGE_MAIN);
+}
+
+void SendXML() {
+  strcpy(XML, "<?xml version = '1.0'?>\n<Data>\n");
+
+  strcat(XML, "<CORE0_STATUS>");
+  if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING && uxTaskGetNumberOfTasks() > 0) {
+    strcat(XML, "1");
+  } else {
+    strcat(XML, "0");
+  }
+  strcat(XML, "</CORE0_STATUS>\n");
+
+  strcat(XML, "<CORE1_STATUS>");
+  if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING && uxTaskGetNumberOfTasks() > 1) {
+    strcat(XML, "1");
+  } else {
+    strcat(XML, "0");
+  }
+  strcat(XML, "</CORE1_STATUS>\n");
+  // Append height value in <HEIGHT> tag for web UI compatibility
+  strcat(XML, "<HEIGHT>");
+  sprintf(buf, "%.2f", distance_controller.getEstimatedDistanceToPlane());
+  strcat(XML, buf);
+  strcat(XML, "</HEIGHT>\n");
+
+  strcat(XML, "</Data>\n");
+//   Serial.println(XML);
+  server.send(200, "text/xml", XML);
+}
+
+void ServerTask(void *pvParameters) {
+  while (true) {
+    // Update the server task core indicators
+    server.handleClient();
+    vTaskDelay(pdMS_TO_TICKS(10));
+  }
 }
 
 void setup()
@@ -258,11 +329,19 @@ void setup()
     }
     else
     {
-        xTaskCreatePinnedToCore(webServerTask, "Web Server Task", 5 * 1024, NULL, 2, NULL, 0);
+        server.on("/", SendWebsite);
+        server.on("/xml", SendXML);
+        server.on("/BUTTON_0_START", ButtonPress0Start);
+        server.on("/BUTTON_0_STOP", ButtonPress0Stop);
+        server.on("/BUTTON_1_START", ButtonPress1Start);
+        server.on("/BUTTON_1_STOP", ButtonPress1Stop);
+        server.begin();
+        // xTaskCreatePinnedToCore(webServerTask, "Web Server Task", 5 * 1024, NULL, 2, NULL, 0);
+        xTaskCreatePinnedToCore(ServerTask, "serverTask", 4096, NULL, 3, NULL, 1);
         printDebug("Started web server task");
     }
 
-    xTaskCreate(controlTask, "Control Task", 2048, NULL, 3, NULL);
+    xTaskCreatePinnedToCore(controlTask, "Control Task", 2048, NULL, 3, NULL, 0);
 
     // Delete setup and loop tasks
     vTaskDelete(NULL);
