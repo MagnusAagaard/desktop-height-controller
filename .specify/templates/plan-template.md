@@ -31,7 +31,32 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+Verify compliance with all principles defined in `.specify/memory/constitution.md`:
+
+**I. Test-First Development**
+- [ ] Test strategy defined before implementation
+- [ ] Coverage targets specified (unit 80%+, integration for all hardware paths, E2E for workflows)
+- [ ] Red-Green-Refactor cycle plan documented
+
+**II. Code Quality Standards**
+- [ ] Linting/formatting tools configured
+- [ ] Code review process defined
+- [ ] Documentation requirements identified (API docs, README, inline)
+- [ ] Error handling strategy specified
+
+**III. User Experience Consistency**
+- [ ] Accessibility requirements defined (keyboard nav, screen reader, WCAG 2.1 AA)
+- [ ] Feedback mechanisms specified (visual/audio confirmations, progress indicators)
+- [ ] Error prevention measures identified (validation, confirmations)
+- [ ] User documentation plan established
+
+**IV. Performance Requirements**
+- [ ] Response time targets defined (UI <100ms, adjustments <2s, queries <50ms)
+- [ ] Resource limits specified (memory <100MB idle/<200MB active, CPU <5%/<25%)
+- [ ] Performance testing approach documented
+- [ ] Benchmarks established for critical paths
+
+**Complexity Justification**: If this feature requires deviations from standard patterns or adds significant complexity, document in Complexity Tracking section below.
 
 ## Project Structure
 

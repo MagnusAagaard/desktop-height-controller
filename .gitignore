@@ -1,0 +1,75 @@
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# ESP32/Arduino build
+build/
+*.elf
+*.bin
+*.hex
+*.map
+
+# IDE and Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Compiled files
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Logs
+*.log
+logs/
+
+# Environment and secrets
+.env
+.env.local
+*.env
+secrets.h
+wifi_credentials.h
+
+# Test output
+test_output/
+coverage/
+*.gcov
+*.gcda
+*.gcno
+
+# Dependencies (if using npm for web tools)
+node_modules/
+
+# Temporary files
+tmp/
+temp/
+*.bak
+*.backup
+
+# Documentation build
+docs/_build/
+
+# SPIFFS image (generated)
+spiffs.bin
+
+# Compiled Python
+__pycache__/
+*.py[cod]
+*$py.class

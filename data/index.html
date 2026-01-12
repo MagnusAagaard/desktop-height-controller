@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desk Height Controller</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Desk Height Controller</h1>
+            <div id="connection-status" class="status-indicator disconnected" 
+                 role="status" aria-live="polite">
+                <span class="status-dot"></span>
+                <span class="status-text">Connecting...</span>
+            </div>
+        </header>
+
+        <main>
+            <!-- Current Height Display -->
+            <section class="height-display" aria-label="Current desk height">
+                <div class="current-height">
+                    <span class="height-value" id="current-height" aria-live="polite">--</span>
+                    <span class="height-unit">cm</span>
+                </div>
+                <div class="status-display">
+                    <span id="movement-status" class="movement-status idle">Idle</span>
+                </div>
+            </section>
+
+            <!-- Target Height Input -->
+            <section class="target-section" aria-label="Set target height">
+                <h2>Move To Height</h2>
+                <form id="target-form" class="target-form">
+                    <div class="input-group">
+                        <label for="target-height" class="visually-hidden">Target height in centimeters</label>
+                        <input type="number" 
+                               id="target-height" 
+                               name="height" 
+                               min="50" 
+                               max="125" 
+                               step="1" 
+                               placeholder="75"
+                               aria-describedby="height-range"
+                               required>
+                        <span class="input-suffix">cm</span>
+                    </div>
+                    <p id="height-range" class="help-text">
+                        Valid range: <span id="min-height">50</span> - <span id="max-height">125</span> cm
+                    </p>
+                    <button type="submit" class="btn btn-primary" id="move-btn">
+                        Move to Height
+                    </button>
+                </form>
+            </section>
+
+            <!-- Emergency Stop -->
+            <section class="emergency-section">
+                <button type="button" id="stop-btn" class="btn btn-danger btn-large">
+                    ⚠️ EMERGENCY STOP
+                </button>
+            </section>
+
+            <!-- Presets Section -->
+            <section class="presets-section" aria-label="Height presets">
+                <h2>Presets</h2>
+                <div class="preset-buttons" id="preset-buttons">
+                    <!-- Preset buttons will be populated by JavaScript -->
+                    <button class="btn btn-preset" data-slot="1" disabled>
+                        <span class="preset-label">Preset 1</span>
+                        <span class="preset-height">-- cm</span>
+                    </button>
+                    <button class="btn btn-preset" data-slot="2" disabled>
+                        <span class="preset-label">Preset 2</span>
+                        <span class="preset-height">-- cm</span>
+                    </button>
+                    <button class="btn btn-preset" data-slot="3" disabled>
+                        <span class="preset-label">Preset 3</span>
+                        <span class="preset-height">-- cm</span>
+                    </button>
+                    <button class="btn btn-preset" data-slot="4" disabled>
+                        <span class="preset-label">Preset 4</span>
+                        <span class="preset-height">-- cm</span>
+                    </button>
+                    <button class="btn btn-preset" data-slot="5" disabled>
+                        <span class="preset-label">Preset 5</span>
+                        <span class="preset-height">-- cm</span>
+                    </button>
+                </div>
+                <details class="preset-config">
+                    <summary>Configure Presets</summary>
+                    <div id="preset-config-form">
+                        <!-- Preset configuration forms will be populated by JavaScript -->
+                    </div>
+                </details>
+            </section>
+
+            <!-- Diagnostics Section -->
+            <section class="diagnostics-section" aria-label="System diagnostics">
+                <details>
+                    <summary>Diagnostics</summary>
+                    <div class="diagnostics-grid">
+                        <div class="diagnostic-item">
+                            <span class="diagnostic-label">Raw Sensor:</span>
+                            <span class="diagnostic-value" id="diag-raw">-- mm</span>
+                        </div>
+                        <div class="diagnostic-item">
+                            <span class="diagnostic-label">Filtered:</span>
+                            <span class="diagnostic-value" id="diag-filtered">-- mm</span>
+                        </div>
+                        <div class="diagnostic-item">
+                            <span class="diagnostic-label">Calculated Height:</span>
+                            <span class="diagnostic-value" id="diag-height">-- cm</span>
+                        </div>
+                        <div class="diagnostic-item">
+                            <span class="diagnostic-label">Sensor Valid:</span>
+                            <span class="diagnostic-value" id="diag-valid">--</span>
+                        </div>
+                        <div class="diagnostic-item">
+                            <span class="diagnostic-label">Movement State:</span>
+                            <span class="diagnostic-value" id="diag-state">--</span>
+                        </div>
+                        <div class="diagnostic-item">
+                            <span class="diagnostic-label">Target:</span>
+                            <span class="diagnostic-value" id="diag-target">-- cm</span>
+                        </div>
+                        <div class="diagnostic-item">
+                            <span class="diagnostic-label">SSE Clients:</span>
+                            <span class="diagnostic-value" id="diag-clients">--</span>
+                        </div>
+                        <div class="diagnostic-item">
+                            <span class="diagnostic-label">Uptime:</span>
+                            <span class="diagnostic-value" id="diag-uptime">--</span>
+                        </div>
+                        <div class="diagnostic-item">
+                            <span class="diagnostic-label">Free Heap:</span>
+                            <span class="diagnostic-value" id="diag-heap">-- bytes</span>
+                        </div>
+                        <div class="diagnostic-item">
+                            <span class="diagnostic-label">Last Error:</span>
+                            <span class="diagnostic-value" id="diag-error">None</span>
+                        </div>
+                    </div>
+                </details>
+            </section>
+
+            <!-- Calibration Section -->
+            <section class="calibration-section" aria-label="Calibration">
+                <details>
+                    <summary>Calibration</summary>
+                    <div class="calibration-content">
+                        <p class="calibration-status" id="calibration-status">
+                            <!-- Status will be set by JavaScript -->
+                        </p>
+                        <form id="calibration-form" class="calibration-form">
+                            <p class="help-text">
+                                1. Move your desk to a known height<br>
+                                2. Measure the height from the floor<br>
+                                3. Enter the measured height below and click Calibrate
+                            </p>
+                            <div class="input-group">
+                                <label for="calibration-height">Known Height:</label>
+                                <input type="number" 
+                                       id="calibration-height" 
+                                       name="height" 
+                                       min="30" 
+                                       max="200" 
+                                       step="1"
+                                       placeholder="75"
+                                       required>
+                                <span class="input-suffix">cm</span>
+                            </div>
+                            <button type="submit" class="btn btn-secondary">
+                                Calibrate
+                            </button>
+                        </form>
+                    </div>
+                </details>
+            </section>
+        </main>
+
+        <!-- Toast notifications -->
+        <div id="toast-container" class="toast-container" role="alert" aria-live="assertive">
+        </div>
+
+        <!-- Confirmation Modal -->
+        <div id="confirm-modal" class="modal" role="dialog" aria-modal="true" aria-hidden="true">
+            <div class="modal-content">
+                <h3 id="modal-title">Confirm Move</h3>
+                <p id="modal-message">Are you sure you want to move the desk?</p>
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-secondary" id="modal-cancel">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="modal-confirm">Move</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

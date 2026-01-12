@@ -95,6 +95,23 @@
 - **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
 - **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
 
+### User Experience Requirements *(Constitution Principle III)*
+
+- **UX-001**: UI MUST provide feedback for all user actions within [specify ms, default <100ms]
+- **UX-002**: Dangerous operations MUST require confirmation dialog [specify which operations]
+- **UX-003**: All interactive elements MUST be keyboard accessible
+- **UX-004**: Error messages MUST be clear and actionable [provide examples]
+- **UX-005**: UI terminology MUST be consistent throughout [define key terms]
+- **UX-006**: Screen reader support MUST meet WCAG 2.1 AA standard
+
+### Performance Requirements *(Constitution Principle IV)*
+
+- **PERF-001**: UI interactions MUST respond within [specify, default <100ms]
+- **PERF-002**: Critical operations MUST complete within [specify timing]
+- **PERF-003**: Memory usage MUST NOT exceed [specify, default 200MB active]
+- **PERF-004**: CPU usage MUST average below [specify, default 25% active]
+- **PERF-005**: System MUST handle [specify load/concurrency requirements]
+
 ### Key Entities *(include if feature involves data)*
 
 - **[Entity 1]**: [What it represents, key attributes without implementation]
