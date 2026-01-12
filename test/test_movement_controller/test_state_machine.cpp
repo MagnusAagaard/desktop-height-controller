@@ -15,7 +15,12 @@
  * - Any → ERROR (sensor fail, timeout)
  */
 
+#ifdef NATIVE_TEST
+#include <ArduinoFake.h>
+using namespace fakeit;
+#else
 #include <Arduino.h>
+#endif
 #include <unity.h>
 
 // These tests define the expected behavior.
@@ -322,6 +327,45 @@ void test_emergency_stop() {
     TEST_PASS();
 }
 
+#ifdef NATIVE_TEST
+int main(int argc, char **argv) {
+    UNITY_BEGIN();
+    
+    // Initial state
+    RUN_TEST(test_state_initial_idle);
+    
+    // IDLE transitions
+    RUN_TEST(test_transition_idle_to_moving_up);
+    RUN_TEST(test_transition_idle_to_moving_down);
+    RUN_TEST(test_transition_idle_stays_at_target);
+    
+    // MOVING transitions
+    RUN_TEST(test_transition_moving_up_to_stabilizing);
+    RUN_TEST(test_transition_moving_down_to_stabilizing);
+    
+    // STABILIZING behavior
+    RUN_TEST(test_transition_stabilizing_to_idle);
+    RUN_TEST(test_stabilizing_timer_reset_on_drift);
+    RUN_TEST(test_stabilizing_resume_movement);
+    
+    // ERROR transitions
+    RUN_TEST(test_transition_to_error_sensor_failure);
+    RUN_TEST(test_transition_to_error_timeout);
+    RUN_TEST(test_transition_error_to_idle);
+    
+    // Motor pin control
+    RUN_TEST(test_motor_pins_moving_up);
+    RUN_TEST(test_motor_pins_moving_down);
+    RUN_TEST(test_motor_pins_idle);
+    RUN_TEST(test_motor_pins_error);
+    RUN_TEST(test_motor_pins_stabilizing);
+    
+    // Emergency stop
+    RUN_TEST(test_emergency_stop);
+    
+    return UNITY_END();
+}
+#else
 void setup() {
     delay(2000);
     UNITY_BEGIN();
@@ -362,3 +406,4 @@ void setup() {
 }
 
 void loop() {}
+#endif

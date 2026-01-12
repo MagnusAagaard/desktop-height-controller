@@ -36,9 +36,8 @@ Verify compliance with all principles defined in `.specify/memory/constitution.m
 - [x] Documentation requirements identified: Inline doxygen comments for filtering functions, update HeightController class documentation, add diagnostic logging for zone-level visibility
 - [x] Error handling strategy specified: Graceful degradation when <4 zones valid (mark INVALID), preserve existing error states, no silent failures
 
-**III. User Experience Consistency
-**
-- [x] Accessibility requirements defined: N/A (embedded system, no direct UI in this feature)
+**III. User Experience Consistency**
+- [x] Accessibility requirements defined: No user-facing UI code changes (this feature modifies HeightController sensor processing only; web UI consumes data via unchanged API). Diagnostic logging (US4) outputs to serial console, not accessible UI.
 - [x] Feedback mechanisms specified: Diagnostic logging for zone exclusions/outliers (P3), existing height display updates maintain 200ms frequency
 - [x] Error prevention measures identified: Validate zone count before consensus, preserve INVALID state when insufficient zones, maintain existing error semantics
 

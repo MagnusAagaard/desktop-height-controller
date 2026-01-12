@@ -9,9 +9,15 @@
  * Per data-model.md: First N-1 samples use partial average (N = filter window size)
  */
 
+#ifdef NATIVE_TEST
+#include <ArduinoFake.h>
+using namespace fakeit;
+#include "MovingAverageFilter.h"  // Local header-only version for native
+#else
 #include <Arduino.h>
-#include <unity.h>
 #include "utils/MovingAverageFilter.h"
+#endif
+#include <unity.h>
 
 void setUp() {}
 void tearDown() {}
@@ -209,6 +215,23 @@ void test_filtering_to_height_calculation() {
     TEST_ASSERT_EQUAL(100, height_cm);  // 200 - 100 = 100cm
 }
 
+#ifdef NATIVE_TEST
+int main(int argc, char **argv) {
+    UNITY_BEGIN();
+    
+    RUN_TEST(test_filtering_applied_to_raw_readings);
+    RUN_TEST(test_filtering_first_sample);
+    RUN_TEST(test_filtering_partial_window);
+    RUN_TEST(test_filtering_gradual_change);
+    RUN_TEST(test_filtering_spike_rejection);
+    RUN_TEST(test_filtering_steady_state_accuracy);
+    RUN_TEST(test_filtering_window_size_effect);
+    RUN_TEST(test_filtering_reset);
+    RUN_TEST(test_filtering_to_height_calculation);
+    
+    return UNITY_END();
+}
+#else
 void setup() {
     delay(2000);
     UNITY_BEGIN();
@@ -227,3 +250,4 @@ void setup() {
 }
 
 void loop() {}
+#endif

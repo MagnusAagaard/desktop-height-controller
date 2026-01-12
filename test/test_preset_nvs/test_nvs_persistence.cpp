@@ -7,7 +7,12 @@
  */
 
 #include <unity.h>
+#ifdef NATIVE_TEST
+#include <ArduinoFake.h>
+using namespace fakeit;
+#else
 #include <Arduino.h>
+#endif
 
 // Constants matching PresetManager
 const char* NVS_NAMESPACE = "presets";
@@ -210,6 +215,35 @@ void test_graceful_nvs_error_handling(void) {
     TEST_ASSERT_TRUE(should_continue);
 }
 
+#ifdef NATIVE_TEST
+int main(int argc, char **argv) {
+    UNITY_BEGIN();
+    
+    // NVS key format tests
+    RUN_TEST(test_nvs_key_format_height);
+    RUN_TEST(test_nvs_key_format_name);
+    
+    // Persistence logic tests
+    RUN_TEST(test_save_creates_correct_keys);
+    RUN_TEST(test_load_uses_correct_keys);
+    RUN_TEST(test_default_values_when_missing);
+    
+    // Data type tests
+    RUN_TEST(test_height_stored_as_float);
+    RUN_TEST(test_name_stored_as_string);
+    RUN_TEST(test_slots_persisted_independently);
+    
+    // Reboot simulation tests
+    RUN_TEST(test_data_survives_reboot_simulation);
+    RUN_TEST(test_multiple_presets_survive_reboot);
+    
+    // Error handling tests
+    RUN_TEST(test_nvs_namespace_valid);
+    RUN_TEST(test_graceful_nvs_error_handling);
+    
+    return UNITY_END();
+}
+#else
 void setup() {
     delay(2000);
     
@@ -243,3 +277,4 @@ void setup() {
 void loop() {
     // Empty
 }
+#endif

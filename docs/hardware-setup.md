@@ -113,10 +113,28 @@ Where:
 - Result is in centimeters
 
 ### Field of View
-VL53L5CX has an 8x8 zone capability, but this project uses single-zone mode for:
-- Faster sampling (5Hz target)
-- Simpler processing
-- Adequate accuracy for height measurement
+The VL53L5CX operates in 4×4 resolution mode, providing 16 measurement zones:
+
+```
+Zone Layout (4×4 grid):
+┌────┬────┬────┬────┐
+│  0 │  1 │  2 │  3 │
+├────┼────┼────┼────┤
+│  4 │  5 │  6 │  7 │
+├────┼────┼────┼────┤
+│  8 │  9 │ 10 │ 11 │
+├────┼────┼────┼────┤
+│ 12 │ 13 │ 14 │ 15 │
+└────┴────┴────┴────┘
+```
+
+**Multi-Zone Filtering** (v2.0+):
+- All 16 zones are used for spatial consensus filtering
+- Invalid zones (status 0 or 255) are automatically excluded
+- Outliers (>30mm from median) are filtered out
+- Mean of remaining valid zones provides stable height reading
+- Minimum 4 valid zones required for reliable measurement
+- Tolerates up to 75% zone failures (e.g., partial obstructions)
 
 ## Safety Considerations
 

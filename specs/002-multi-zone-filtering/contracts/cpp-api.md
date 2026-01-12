@@ -143,8 +143,12 @@ bool isZoneValid(uint8_t status, uint16_t distance) const {
         return false;
     }
     
-    // Status 5, 6, 9 are valid variants
-    // Other values may be valid but less reliable - accept all except 0/255
+    // Accept only high-confidence status codes: 5, 6, 9
+    // Reject undefined codes (1-4, 7-8, 10+) until validated
+    if (status != 5 && status != 6 && status != 9) {
+        return false;
+    }
+    
     return true;
 }
 ```

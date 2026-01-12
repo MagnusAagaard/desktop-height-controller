@@ -11,9 +11,11 @@
 
 - Q: Should the system use median or mean for outlier detection and consensus calculation? → A: Use median for outlier detection, then mean for consensus (hybrid approach - faster mean calculation after outliers removed)
 - Q: What is the minimum number of valid zones required before marking the entire reading as invalid? → A: Minimum 4 zones (25%) required - more tolerant of failures, still provides multi-zone benefit
-- Q: What deviation threshold should be used to identify outlier zone measurements? → A: 30mm threshold - balanced approach for typical noise levels and floor variations
+- Q: What deviation threshold should be used to identify outlier zone measurements? → A: 30mm threshold - balanced approach for typical noise levels and floor variations (to be validated during Phase 0 research against actual sensor noise characterization; threshold represents ~3x expected noise margin)
 - Q: What maximum percentage of invalid zones should the system successfully handle? → A: Update to 75% tolerance (12 invalid zones max) - matches the 4-zone minimum threshold exactly
 - Q: Should multi-zone filtering replace, cascade with, or run parallel to the existing temporal moving average filter? → A: Two-stage cascade: multi-zone consensus → temporal moving average (complementary spatial + temporal filtering)
+- Q: How should the system handle bimodal distributions where zones form distinct clusters (e.g., half zones at 800mm, half at 840mm due to mat edge)? → A: Accept bimodal distributions if all zones fall within median ± 30mm (outlier threshold). If cluster separation exceeds 60mm (2× threshold), this indicates non-uniform floor surface but system will still compute mean consensus. User responsibility to ensure reasonably uniform floor surface; system does not reject bimodal readings as this is a valid physical scenario.
+- Q: Which VL53L5CX status codes should be considered valid for zone measurements? → A: Accept status codes 5, 6, 9 as high-confidence valid measurements. Reject status codes 0 (no target) and 255 (invalid). Other status codes (1-4, 7-8, 10+) are currently undefined and should be rejected conservatively until validated during Phase 0 sensor characterization.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -84,13 +86,13 @@ A developer or advanced user wants to understand how the multi-zone filtering is
 
 ### Edge Cases
 
-- What happens when all sensor zones report invalid data simultaneously?
-- How does the system handle gradual drift across all zones (sensor temperature effects)?
-- What happens when exactly half the zones show one distance and half show significantly different distance?
-- How does filtering perform during rapid movement when consecutive readings vary significantly?
-- What happens when one zone consistently reports outlier values (damaged zone)?
-- How does the system distinguish between genuine height changes and sensor noise?
-- What happens when the desk is at extreme angles (manufacturer tilt tolerance)?
+- What happens when all sensor zones report invalid data simultaneously? → **Handled by FR-007**: Reading marked INVALID (0 < 4 minimum zones)
+- How does the system handle gradual drift across all zones (sensor temperature effects)? → **Spatial filter passes drift** (no outliers detected when all zones shift together), **temporal filter smooths** the gradual change; validated in integration tests (Phase 3)
+- What happens when exactly half the zones show one distance and half show significantly different distance? → **Handled by FR-009**: Bimodal distributions accepted if separation ≤60mm; consensus = mean of all non-outlier zones
+- How does filtering perform during rapid movement when consecutive readings vary significantly? → **Two-stage cascade**: Spatial filter stabilizes per-update, temporal filter smooths inter-update variation; validated in integration tests
+- What happens when one zone consistently reports outlier values (damaged zone)? → **Outlier filtering excludes it** each update (>30mm from median); system remains valid if ≥4 other zones available
+- How does the system distinguish between genuine height changes and sensor noise? → **Temporal filter** smooths noise while tracking real movement; genuine height changes affect all zones simultaneously (consensus shifts), noise affects individual zones (filtered out)
+- What happens when the desk is at extreme angles (manufacturer tilt tolerance)? → **Assumed within sensor spec**; if tilt causes zone variation >30mm, may trigger outlier filtering but ≥4 zones should remain valid
 
 ## Requirements *(mandatory)*
 
@@ -104,10 +106,11 @@ A developer or advanced user wants to understand how the multi-zone filtering is
 - **FR-006**: System MUST maintain backward compatibility with existing height calculation formula (calibration_constant - distance/10)
 - **FR-007**: System MUST mark reading as INVALID when fewer than 4 zones (25% of total) return valid data; otherwise use available valid zones for consensus calculation
 - **FR-008**: System MUST preserve existing reading validity states (VALID, INVALID, STALE) with same semantics
+- **FR-009**: System MUST accept bimodal zone distributions (multiple distinct distance clusters) and compute consensus as mean of all non-outlier zones, even when clusters are separated by up to 60mm; system does not reject bimodal readings as this represents valid physical floor variation (user responsibility to ensure reasonably uniform surface)
 
 ### User Experience Requirements
 
-- **UX-001**: Height display MUST show visibly smoother values with reduced fluctuation compared to baseline (subjectively stable to human observation)
+- **UX-001**: Height display MUST show visibly smoother values with reduced fluctuation compared to baseline (subjectively stable to human observation). Note: "Height display" refers to the web UI (data/index.html) which consumes height readings via WebServer API; this feature modifies sensor data processing only, not UI rendering. Web UI accessibility is out of scope (no UI code changes).
 - **UX-002**: Height display updates MUST maintain the same frequency as baseline implementation (200ms interval, 5Hz)
 - **UX-003**: System MUST NOT introduce perceptible lag in height updates when desk is actively moving
 - **UX-004**: Error states MUST remain clear and actionable (sensor failure messages unchanged)

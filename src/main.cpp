@@ -195,44 +195,24 @@ void initSPIFFS() {
 /**
  * @brief Initialize WiFi connection
  * 
- * Priority order for WiFi credentials:
- * 1. secrets.h (compile-time, if WIFI_SSID is defined and non-empty)
- * 2. SystemConfig/NVS (runtime, previously saved credentials)
- * 3. AP mode fallback if no credentials available
+ * WiFi credentials are loaded from secrets.h (compile-time)
+ * Falls back to AP mode if secrets.h is not configured
  */
 void initWiFi() {
     Logger::info("Main", "Initializing WiFi...");
     
     wifiManager.setStatusCallback(onWiFiStatusChange);
     
-    String ssid;
-    String password;
-    
-    // Check for compile-time credentials from secrets.h
 #if HAS_SECRETS && defined(WIFI_SSID) && defined(WIFI_PASSWORD)
     if (strlen(WIFI_SSID) > 0) {
-        ssid = WIFI_SSID;
-        password = WIFI_PASSWORD;
-        Logger::info("Main", "Using credentials from secrets.h");
+        Logger::info("Main", "Connecting to: %s", WIFI_SSID);
+        wifiManager.begin(WIFI_SSID, WIFI_PASSWORD);
+        return;
     }
 #endif
     
-    // Fall back to NVS-stored credentials if secrets.h not configured
-    if (ssid.length() == 0) {
-        ssid = SystemConfig.getWiFiSSID();
-        password = SystemConfig.getWiFiPassword();
-        if (ssid.length() > 0) {
-            Logger::info("Main", "Using credentials from NVS");
-        }
-    }
-    
-    if (ssid.length() > 0) {
-        Logger::info("Main", "Connecting to: %s", ssid.c_str());
-        wifiManager.begin(ssid, password);
-    } else {
-        Logger::warn("Main", "No WiFi configured, starting AP mode");
-        wifiManager.beginAPMode();
-    }
+    Logger::warn("Main", "No WiFi configured in secrets.h, starting AP mode");
+    wifiManager.beginAPMode();
 }
 
 /**

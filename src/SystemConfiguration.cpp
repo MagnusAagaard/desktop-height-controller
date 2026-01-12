@@ -19,8 +19,6 @@ static const char* KEY_TOLERANCE = "tolerance";
 static const char* KEY_STAB_DUR = "stab_dur";
 static const char* KEY_MOVE_TIMEOUT = "move_timeout";
 static const char* KEY_FILTER_WIN = "filter_win";
-static const char* KEY_WIFI_SSID = "wifi_ssid";
-static const char* KEY_WIFI_PASS = "wifi_pass";
 
 SystemConfiguration::SystemConfiguration()
     : initialized_(false)
@@ -66,8 +64,6 @@ void SystemConfiguration::applyDefaults() {
     stabilizationDuration_ = DEFAULT_STABILIZATION_DURATION_MS;
     movementTimeout_ = DEFAULT_MOVEMENT_TIMEOUT_MS;
     filterWindowSize_ = DEFAULT_FILTER_WINDOW_SIZE;
-    wifiSSID_ = DEFAULT_WIFI_SSID;
-    wifiPassword_ = DEFAULT_WIFI_PASSWORD;
 }
 
 void SystemConfiguration::loadFromNVS() {
@@ -80,8 +76,7 @@ void SystemConfiguration::loadFromNVS() {
     stabilizationDuration_ = preferences_.getUShort(KEY_STAB_DUR, stabilizationDuration_);
     movementTimeout_ = preferences_.getUShort(KEY_MOVE_TIMEOUT, movementTimeout_);
     filterWindowSize_ = preferences_.getUChar(KEY_FILTER_WIN, filterWindowSize_);
-    wifiSSID_ = preferences_.getString(KEY_WIFI_SSID, wifiSSID_);
-    wifiPassword_ = preferences_.getString(KEY_WIFI_PASS, wifiPassword_);
+    // WiFi credentials are loaded from secrets.h at compile time, not from NVS
     
     // Validate and clamp filter window size
     if (filterWindowSize_ < MIN_FILTER_WINDOW_SIZE) {
@@ -104,8 +99,6 @@ uint16_t SystemConfiguration::getTolerance() const { return tolerance_; }
 uint16_t SystemConfiguration::getStabilizationDuration() const { return stabilizationDuration_; }
 uint16_t SystemConfiguration::getMovementTimeout() const { return movementTimeout_; }
 uint8_t SystemConfiguration::getFilterWindowSize() const { return filterWindowSize_; }
-String SystemConfiguration::getWiFiSSID() const { return wifiSSID_; }
-String SystemConfiguration::getWiFiPassword() const { return wifiPassword_; }
 
 // Setters with NVS persistence
 bool SystemConfiguration::setCalibrationConstant(int16_t value) {
@@ -196,30 +189,6 @@ bool SystemConfiguration::setFilterWindowSize(uint8_t value) {
     return false;
 }
 
-bool SystemConfiguration::setWiFiCredentials(const String& ssid, const String& password) {
-    if (ssid.length() == 0 || ssid.length() > 32) {
-        Logger::error(TAG, "Invalid SSID length: %d", ssid.length());
-        return false;
-    }
-    
-    if (password.length() > 0 && (password.length() < 8 || password.length() > 63)) {
-        Logger::error(TAG, "Invalid password length: %d", password.length());
-        return false;
-    }
-    
-    bool success = true;
-    success &= saveString(KEY_WIFI_SSID, ssid);
-    success &= saveString(KEY_WIFI_PASS, password);
-    
-    if (success) {
-        wifiSSID_ = ssid;
-        wifiPassword_ = password;
-        Logger::info(TAG, "WiFi credentials updated for SSID: %s", ssid.c_str());
-    }
-    
-    return success;
-}
-
 bool SystemConfiguration::isValidHeight(uint16_t height) const {
     return height >= minHeight_ && height <= maxHeight_;
 }
@@ -259,8 +228,7 @@ String SystemConfiguration::toJson() const {
     json += "\"stabilizationDuration\":" + String(stabilizationDuration_) + ",";
     json += "\"movementTimeout\":" + String(movementTimeout_) + ",";
     json += "\"filterWindowSize\":" + String(filterWindowSize_) + ",";
-    json += "\"isCalibrated\":" + String(isCalibrated() ? "true" : "false") + ",";
-    json += "\"wifiConfigured\":" + String(wifiSSID_.length() > 0 ? "true" : "false");
+    json += "\"isCalibrated\":" + String(isCalibrated() ? "true" : "false");
     json += "}";
     return json;
 }

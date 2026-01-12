@@ -121,15 +121,40 @@ constexpr uint8_t MAX_FILTER_WINDOW_SIZE = 10;
 constexpr uint8_t MIN_FILTER_WINDOW_SIZE = 3;
 
 // =============================================================================
+// Multi-Zone Filtering Configuration (per 002-multi-zone-filtering feature)
+// =============================================================================
+
+/**
+ * Outlier threshold in millimeters for multi-zone consensus
+ * Zones deviating more than this from median are excluded
+ * 
+ * Rationale: 30mm = ~3× typical sensor noise margin + floor variation tolerance
+ * Per FR-003 and spec clarification session 2026-01-12
+ */
+constexpr uint16_t MULTI_ZONE_OUTLIER_THRESHOLD_MM = 30;
+
+/**
+ * Minimum number of valid zones required for reliable consensus
+ * Below this threshold, reading is marked INVALID
+ * 
+ * Rationale: 4 zones (25%) provides meaningful multi-zone benefit while
+ * tolerating up to 75% zone failures per FR-007 and SC-005
+ */
+constexpr uint8_t MULTI_ZONE_MIN_VALID_ZONES = 4;
+
+/**
+ * Total number of zones in 4x4 sensor resolution mode
+ */
+constexpr uint8_t MULTI_ZONE_TOTAL_ZONES = 16;
+
+// =============================================================================
 // WiFi Configuration
 // =============================================================================
 
 /**
- * Default WiFi credentials - CHANGE THESE for your network
- * These are loaded from NVS if previously saved, otherwise use these defaults
+ * WiFi credentials are configured in secrets.h (not tracked by git)
+ * See secrets.h.example for the template
  */
-constexpr const char* DEFAULT_WIFI_SSID = "";
-constexpr const char* DEFAULT_WIFI_PASSWORD = "";
 
 /**
  * WiFi connection timeout in milliseconds

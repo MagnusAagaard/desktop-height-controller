@@ -22,8 +22,9 @@ This document defines the runtime data structures for multi-zone sensor filterin
 
 **Validation Rules**:
 - Zone is valid if:
-  - `status` is 5, 6, or 9 (valid variants)
-  - `status` is NOT 0 or 255 (invalid indicators)
+  - `status` is 5, 6, or 9 (high-confidence valid measurements per VL53L5CX spec)
+  - `status` is NOT 0 (no target detected) or 255 (measurement invalid)
+  - `status` codes 1-4, 7-8, 10+ are rejected conservatively (undefined/untested)
   - `distance_mm >= SENSOR_MIN_VALID_MM` (e.g., 200mm)
   - `distance_mm <= SENSOR_MAX_RANGE_MM` (e.g., 4000mm)
 
