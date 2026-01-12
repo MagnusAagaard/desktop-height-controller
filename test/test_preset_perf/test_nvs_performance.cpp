@@ -7,7 +7,12 @@
  */
 
 #include <unity.h>
+#ifdef NATIVE_TEST
+#include <ArduinoFake.h>
+using namespace fakeit;
+#else
 #include <Arduino.h>
+#endif
 
 // Performance requirement per PERF-006
 const unsigned long MAX_NVS_WRITE_LATENCY_MS = 1000;
@@ -210,6 +215,30 @@ void test_timing_consistency(void) {
     }
 }
 
+#ifdef NATIVE_TEST
+int main(int argc, char **argv) {
+    UNITY_BEGIN();
+    
+    // Performance expectation tests (these just check constants, no timing)
+    RUN_TEST(test_max_latency_requirement);
+    RUN_TEST(test_typical_float_write_time);
+    RUN_TEST(test_typical_string_write_time);
+    RUN_TEST(test_total_preset_save_time);
+    
+    // SKIP: All benchmark/timing tests - require real delay()/millis()
+    // test_simulated_float_write
+    // test_simulated_string_write
+    // test_simulated_preset_save
+    // test_multiple_sequential_writes
+    // test_millis_timing_accuracy
+    // test_micros_available
+    // test_zero_length_string_timing
+    // test_max_length_string_timing
+    // test_timing_consistency
+    
+    return UNITY_END();
+}
+#else
 void setup() {
     delay(2000);
     
@@ -242,3 +271,4 @@ void setup() {
 void loop() {
     // Empty
 }
+#endif

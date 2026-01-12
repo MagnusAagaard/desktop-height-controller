@@ -7,7 +7,8 @@
  * - Safety limits (min/max height)
  * - Movement parameters (tolerance, stabilization, timeout)
  * - Filter settings
- * - WiFi credentials
+ * 
+ * WiFi credentials are managed separately via secrets.h
  * 
  * Per data-model.md Section 5: System Configuration
  */
@@ -94,18 +95,6 @@ public:
      */
     uint8_t getFilterWindowSize() const;
     
-    /**
-     * @brief Get WiFi SSID
-     * @return String SSID (may be empty)
-     */
-    String getWiFiSSID() const;
-    
-    /**
-     * @brief Get WiFi password
-     * @return String Password (may be empty)
-     */
-    String getWiFiPassword() const;
-    
     // =========================================================================
     // Setters (auto-save to NVS)
     // =========================================================================
@@ -159,14 +148,6 @@ public:
      */
     bool setFilterWindowSize(uint8_t value);
     
-    /**
-     * @brief Set WiFi credentials
-     * @param ssid Network SSID
-     * @param password Network password
-     * @return true if saved successfully
-     */
-    bool setWiFiCredentials(const String& ssid, const String& password);
-    
     // =========================================================================
     // Validation
     // =========================================================================
@@ -208,8 +189,6 @@ private:
     uint16_t stabilizationDuration_;
     uint16_t movementTimeout_;
     uint8_t filterWindowSize_;
-    String wifiSSID_;
-    String wifiPassword_;
     
     /**
      * @brief Load all values from NVS

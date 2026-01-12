@@ -6,9 +6,15 @@
  * These tests should FAIL until MovingAverageFilter is implemented.
  */
 
+#ifdef NATIVE_TEST
+#include <ArduinoFake.h>
+using namespace fakeit;
+#include "MovingAverageFilter.h"  // Local header-only version for native
+#else
 #include <Arduino.h>
-#include <unity.h>
 #include "utils/MovingAverageFilter.h"
+#endif
+#include <unity.h>
 
 // Forward declarations
 void test_filter_initial_state();
@@ -198,6 +204,27 @@ void test_filter_get_last_sample() {
 }
 
 // Arduino framework entry points
+#ifdef NATIVE_TEST
+int main(int argc, char **argv) {
+    UNITY_BEGIN();
+    
+    // Run all tests
+    RUN_TEST(test_filter_initial_state);
+    RUN_TEST(test_filter_single_sample);
+    RUN_TEST(test_filter_partial_window);
+    RUN_TEST(test_filter_full_window_averaging);
+    RUN_TEST(test_filter_window_sliding);
+    RUN_TEST(test_filter_reset);
+    RUN_TEST(test_filter_window_size_minimum);
+    RUN_TEST(test_filter_window_size_maximum);
+    RUN_TEST(test_filter_empty_average);
+    RUN_TEST(test_filter_overflow_protection);
+    RUN_TEST(test_filter_is_full);
+    RUN_TEST(test_filter_get_last_sample);
+    
+    return UNITY_END();
+}
+#else
 void setup() {
     // Wait for Serial to be ready
     delay(2000);
@@ -224,3 +251,4 @@ void setup() {
 void loop() {
     // Nothing to do in loop for tests
 }
+#endif

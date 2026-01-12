@@ -131,6 +131,62 @@ Open the web interface and expand the "Diagnostics" section to see:
 
 ---
 
+### Multi-Zone Sensor Diagnostics (v2.0+)
+
+**Symptoms:**
+- Height reading marked as "Invalid" or "Unreliable"
+- Fluctuating readings despite stable desk
+- "Insufficient valid zones" warning in logs
+
+**Understanding Zone Diagnostics:**
+
+The VL53L5CX sensor uses 16 zones in a 4×4 grid. Enable DEBUG logging to see:
+```
+Zone  0: status=5, dist=1450mm VALID
+Zone  1: status=255, dist=0mm invalid
+...
+Multi-zone consensus: 1445mm (14 zones, 2 outliers, median 1446mm)
+```
+
+**Status Codes:**
+| Code | Meaning |
+|------|---------|
+| 5 | Valid measurement (high confidence) |
+| 6 | Valid measurement (medium confidence) |
+| 9 | Valid with sigma wrap |
+| 0 | No target detected |
+| 255 | Sensor error |
+
+**Solutions:**
+
+1. **Many invalid zones (>4)**
+   - Partial obstruction in sensor field of view
+   - Check for cables, wires, or objects near sensor path
+   - Tilt the sensor slightly if one side always fails
+
+2. **High outlier count (>8)**
+   - Non-uniform floor surface (mats, cables)
+   - Consider increasing `MULTI_ZONE_OUTLIER_THRESHOLD_MM` in Config.h
+   - Check if sensor is tilted (creates gradient across zones)
+
+3. **"Insufficient valid zones" error**
+   - Requires minimum 4 valid zones
+   - Clean sensor lens
+   - Check sensor power supply
+   - Ensure line of sight to floor
+
+4. **Using API for diagnostics**
+   - Call `heightController.getValidZoneCount()` to check zone health
+   - Call `heightController.getOutlierCount()` to monitor filtering
+   - Call `heightController.getZoneDiagnostics()` for full JSON report
+
+5. **Serial debugging**
+   - Set `Logger::init(LogLevel::DEBUG)` in main.cpp
+   - Monitor at 115200 baud
+   - Zone dump appears every 5 seconds
+
+---
+
 ### WiFi Connection Issues
 
 **Symptoms:**

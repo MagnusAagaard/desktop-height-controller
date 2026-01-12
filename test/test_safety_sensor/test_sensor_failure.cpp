@@ -7,7 +7,12 @@
  */
 
 #include <unity.h>
+#ifdef NATIVE_TEST
+#include <ArduinoFake.h>
+using namespace fakeit;
+#else
 #include <Arduino.h>
+#endif
 
 // Test constants
 const unsigned long SENSOR_TIMEOUT_MS = 1000;
@@ -241,6 +246,40 @@ void test_error_diagnostics(void) {
     }
 }
 
+#ifdef NATIVE_TEST
+int main(int argc, char **argv) {
+    UNITY_BEGIN();
+    
+    // Sensor validity detection
+    RUN_TEST(test_valid_sensor_reading);
+    RUN_TEST(test_zero_reading_invalid);
+    RUN_TEST(test_high_reading_invalid);
+    RUN_TEST(test_negative_reading_invalid);
+    
+    // Movement stop on failure
+    RUN_TEST(test_movement_stops_on_invalid_reading);
+    RUN_TEST(test_movement_stops_on_timeout);
+    RUN_TEST(test_movement_continues_on_valid);
+    
+    // MOSFET state on failure
+    RUN_TEST(test_mosfets_low_on_failure);
+    RUN_TEST(test_mutual_exclusion_on_failure);
+    
+    // Error state
+    RUN_TEST(test_error_state_on_failure);
+    RUN_TEST(test_error_message_on_failure);
+    
+    // Recovery
+    RUN_TEST(test_recovery_after_reconnect);
+    RUN_TEST(test_manual_recovery_required);
+    
+    // Error notification
+    RUN_TEST(test_sse_error_event_format);
+    RUN_TEST(test_error_diagnostics);
+    
+    return UNITY_END();
+}
+#else
 void setup() {
     delay(2000);
     
@@ -279,3 +318,4 @@ void setup() {
 void loop() {
     // Empty
 }
+#endif

@@ -9,7 +9,12 @@
  * height_cm = (calibration_constant_cm - sensor_reading_mm / 10)"
  */
 
+#ifdef NATIVE_TEST
+#include <ArduinoFake.h>
+using namespace fakeit;
+#else
 #include <Arduino.h>
+#endif
 #include <unity.h>
 
 // Forward declare HeightController - tests should fail until implementation exists
@@ -187,6 +192,23 @@ void test_height_calculation_uncalibrated() {
     TEST_ASSERT_EQUAL(-100, signed_height);  // Invalid - implementation must handle
 }
 
+#ifdef NATIVE_TEST
+int main(int argc, char **argv) {
+    UNITY_BEGIN();
+    
+    RUN_TEST(test_height_calculation_basic);
+    RUN_TEST(test_height_calculation_minimum);
+    RUN_TEST(test_height_calculation_maximum);
+    RUN_TEST(test_height_calculation_truncation);
+    RUN_TEST(test_height_calculation_different_calibration);
+    RUN_TEST(test_height_calculation_clamping);
+    RUN_TEST(test_height_calculation_zero_reading);
+    RUN_TEST(test_height_calculation_max_sensor_reading);
+    RUN_TEST(test_height_calculation_uncalibrated);
+    
+    return UNITY_END();
+}
+#else
 void setup() {
     delay(2000);
     UNITY_BEGIN();
@@ -205,3 +227,4 @@ void setup() {
 }
 
 void loop() {}
+#endif

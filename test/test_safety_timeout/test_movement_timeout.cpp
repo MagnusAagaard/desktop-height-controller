@@ -7,7 +7,12 @@
  */
 
 #include <unity.h>
+#ifdef NATIVE_TEST
+#include <ArduinoFake.h>
+using namespace fakeit;
+#else
 #include <Arduino.h>
+#endif
 
 // Test constants per specification
 const unsigned long MOVEMENT_TIMEOUT_MS = 30000;  // 30 seconds
@@ -250,6 +255,46 @@ void test_new_target_after_timeout(void) {
     TEST_ASSERT_TRUE(target_valid);
 }
 
+#ifdef NATIVE_TEST
+int main(int argc, char **argv) {
+    UNITY_BEGIN();
+    
+    // Timeout duration tests
+    RUN_TEST(test_default_timeout_30_seconds);
+    RUN_TEST(test_timeout_in_milliseconds);
+    
+    // Timeout trigger tests
+    RUN_TEST(test_movement_under_timeout_allowed);
+    RUN_TEST(test_movement_at_timeout_triggers);
+    RUN_TEST(test_movement_over_timeout_triggers);
+    RUN_TEST(test_short_movement_no_timeout);
+    
+    // Timer reset tests
+    RUN_TEST(test_timer_resets_on_stop);
+    RUN_TEST(test_timer_resets_on_new_target);
+    RUN_TEST(test_timer_continues_during_stabilization);
+    
+    // State transition tests
+    RUN_TEST(test_error_state_on_timeout);
+    RUN_TEST(test_mosfets_low_on_timeout);
+    RUN_TEST(test_target_cleared_on_timeout);
+    
+    // Error message tests
+    RUN_TEST(test_timeout_error_message);
+    RUN_TEST(test_timeout_error_code);
+    
+    // Edge case tests
+    RUN_TEST(test_timeout_detection_accuracy);
+    // SKIP: test_millis_overflow_handling - requires real millis() implementation
+    RUN_TEST(test_consecutive_timeouts);
+    
+    // Recovery tests
+    RUN_TEST(test_timeout_recovery_requires_user);
+    RUN_TEST(test_new_target_after_timeout);
+    
+    return UNITY_END();
+}
+#else
 void setup() {
     delay(2000);
     
@@ -294,3 +339,4 @@ void setup() {
 void loop() {
     // Empty
 }
+#endif

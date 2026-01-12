@@ -44,6 +44,20 @@ struct HeightReading {
 };
 
 /**
+ * @struct ConsensusResult
+ * @brief Multi-zone consensus result per data-model.md Section 2
+ * 
+ * Aggregated distance estimate from multiple valid zones after outlier filtering.
+ * Used for spatial filtering stage before temporal moving average.
+ */
+struct ConsensusResult {
+    uint16_t consensus_distance_mm;   ///< Median-filtered mean of valid zones
+    uint8_t valid_zone_count;         ///< Number of zones that passed validation (0-16)
+    uint8_t outlier_count;            ///< Number of zones excluded as outliers
+    bool is_reliable;                 ///< true if >= 4 valid zones (per FR-007)
+};
+
+/**
  * @class HeightController
  * @brief Manages height sensing and calculation
  * 
@@ -148,16 +162,50 @@ public:
      * @return String JSON representation
      */
     String toJson() const;
+    
+    // =========================================================================
+    // Multi-Zone Diagnostic Methods (per 002-multi-zone-filtering Phase 5)
+    // =========================================================================
+    
+    /**
+     * @brief Get number of valid zones from last consensus computation
+     * @return uint8_t Count of zones that passed validation (0-16)
+     */
+    uint8_t getValidZoneCount() const;
+    
+    /**
+     * @brief Get number of outliers filtered from last consensus computation
+     * @return uint8_t Count of zones excluded as outliers
+     */
+    uint8_t getOutlierCount() const;
+    
+    /**
+     * @brief Get last consensus result for diagnostics
+     * @return const ConsensusResult& Last computed consensus
+     */
+    const ConsensusResult& getLastConsensus() const;
+    
+    /**
+     * @brief Get zone diagnostics as JSON array
+     * 
+     * Returns detailed per-zone information for debugging.
+     * Format: [{"zone":0,"status":5,"distance":1450,"valid":true}, ...]
+     * 
+     * @return String JSON array with zone details
+     */
+    String getZoneDiagnostics() const;
 
 private:
     SparkFun_VL53L5CX sensor_;
     MovingAverageFilter filter_;
     HeightReading currentReading_;
     bool sensorInitialized_;
+    ConsensusResult lastConsensus_;  ///< Cached for diagnostics (P3)
     
     /**
-     * @brief Read raw value from sensor
+     * @brief Read raw value from sensor (legacy single-zone)
      * @return uint16_t Distance in mm, or 0 on error
+     * @deprecated Use computeMultiZoneConsensus() instead
      */
     uint16_t readSensor();
     
@@ -174,6 +222,72 @@ private:
      * @return uint16_t Height in cm
      */
     uint16_t calculateHeight(uint16_t filtered_mm) const;
+    
+    // =========================================================================
+    // Multi-Zone Filtering Methods (per 002-multi-zone-filtering feature)
+    // =========================================================================
+    
+    /**
+     * @brief Compute consensus distance from all 16 sensor zones
+     * 
+     * Two-stage spatial filtering:
+     * 1. Validate each zone (status codes, range)
+     * 2. Compute median of valid zones
+     * 3. Filter outliers (>30mm from median)
+     * 4. Compute mean of remaining non-outliers
+     * 
+     * @param results Sensor data structure with 16 zones
+     * @return ConsensusResult with distance, counts, and reliability flag
+     */
+    ConsensusResult computeMultiZoneConsensus(const VL53L5CX_ResultsData& results);
+    
+    /**
+     * @brief Check if a single zone measurement is valid
+     * 
+     * Validates status codes (5, 6, 9 valid; 0, 255 invalid) and range.
+     * 
+     * @param status Target status code from sensor
+     * @param distance Distance reading in mm
+     * @return true if zone passes validation
+     */
+    bool isZoneValid(uint8_t status, uint16_t distance) const;
+    
+    /**
+     * @brief Calculate median of an array (for outlier detection)
+     * 
+     * Uses in-place insertion sort for small arrays.
+     * For even count, returns lower middle value.
+     * 
+     * @param values Array of distances (may be modified)
+     * @param count Number of elements (1-16)
+     * @return Median value in mm
+     */
+    static uint16_t computeMedian(uint16_t* values, uint8_t count);
+    
+    /**
+     * @brief Calculate arithmetic mean of an array
+     * 
+     * Uses uint32_t accumulator for overflow safety.
+     * 
+     * @param values Array of distances
+     * @param count Number of elements (1-16)
+     * @return Mean value in mm
+     */
+    static uint16_t computeMean(uint16_t* values, uint8_t count);
+    
+    /**
+     * @brief Filter outliers based on deviation from median
+     * 
+     * Marks zones as outliers if |value - median| > 30mm threshold.
+     * 
+     * @param values Array of distances
+     * @param count Number of elements
+     * @param median Pre-computed median value
+     * @param keep_flags Output array of bools (true = keep, false = outlier)
+     * @param kept_count Output count of non-outlier values
+     */
+    static void filterOutliers(uint16_t* values, uint8_t count, uint16_t median,
+                               bool* keep_flags, uint8_t& kept_count);
 };
 
 #endif // HEIGHT_CONTROLLER_H

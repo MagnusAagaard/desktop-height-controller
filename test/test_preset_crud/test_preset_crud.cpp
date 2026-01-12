@@ -7,7 +7,12 @@
  */
 
 #include <unity.h>
+#ifdef NATIVE_TEST
+#include <ArduinoFake.h>
+using namespace fakeit;
+#else
 #include <Arduino.h>
+#endif
 
 // Test constants
 const int MAX_PRESETS = 5;
@@ -267,6 +272,43 @@ void test_all_preset_slots_exist(void) {
     TEST_ASSERT_EQUAL(expected_slots, MAX_PRESETS);
 }
 
+#ifdef NATIVE_TEST
+int main(int argc, char **argv) {
+    UNITY_BEGIN();
+    
+    // Structure tests
+    RUN_TEST(test_preset_structure_fields);
+    RUN_TEST(test_preset_default_values);
+    
+    // Slot validation tests
+    RUN_TEST(test_valid_slot_numbers);
+    RUN_TEST(test_invalid_slot_numbers);
+    
+    // Name validation tests
+    RUN_TEST(test_valid_preset_names);
+    RUN_TEST(test_preset_name_length_limit);
+    RUN_TEST(test_empty_preset_name);
+    
+    // Height validation tests
+    RUN_TEST(test_valid_height_values);
+    RUN_TEST(test_invalid_height_values);
+    RUN_TEST(test_height_boundary_values);
+    
+    // CRUD operation tests
+    RUN_TEST(test_save_preset_logic);
+    RUN_TEST(test_load_preset_logic);
+    RUN_TEST(test_delete_preset_logic);
+    RUN_TEST(test_get_preset_by_slot);
+    RUN_TEST(test_get_all_presets);
+    
+    // Enabled state tests
+    RUN_TEST(test_preset_enabled_with_height);
+    RUN_TEST(test_preset_disabled_without_height);
+    RUN_TEST(test_all_preset_slots_exist);
+    
+    return UNITY_END();
+}
+#else
 void setup() {
     delay(2000);
     
@@ -308,3 +350,4 @@ void setup() {
 void loop() {
     // Empty
 }
+#endif

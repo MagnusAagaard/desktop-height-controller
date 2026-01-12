@@ -8,7 +8,12 @@
  */
 
 #include <unity.h>
+#ifdef NATIVE_TEST
+#include <ArduinoFake.h>
+using namespace fakeit;
+#else
 #include <Arduino.h>
+#endif
 
 // Test SSE event JSON formatting
 // Since WebServer uses ArduinoJson internally, we test the expected JSON structures
@@ -207,6 +212,31 @@ void test_cors_headers(void) {
     TEST_ASSERT_NOT_NULL(allow_methods);
 }
 
+#ifdef NATIVE_TEST
+int main(int argc, char **argv) {
+    UNITY_BEGIN();
+    
+    // SSE event structure tests
+    RUN_TEST(test_height_update_event_structure);
+    RUN_TEST(test_status_change_event_structure);
+    RUN_TEST(test_error_event_structure);
+    RUN_TEST(test_preset_updated_event_structure);
+    RUN_TEST(test_wifi_status_event_structure);
+    
+    // Validation tests
+    RUN_TEST(test_target_height_validation);
+    RUN_TEST(test_preset_slot_validation);
+    RUN_TEST(test_preset_name_validation);
+    
+    // HTTP tests
+    RUN_TEST(test_http_status_codes);
+    RUN_TEST(test_json_content_type);
+    RUN_TEST(test_sse_content_type);
+    RUN_TEST(test_cors_headers);
+    
+    return UNITY_END();
+}
+#else
 void setup() {
     delay(2000);
     
@@ -236,3 +266,4 @@ void setup() {
 void loop() {
     // Empty
 }
+#endif

@@ -7,7 +7,12 @@
  */
 
 #include <unity.h>
+#ifdef NATIVE_TEST
+#include <ArduinoFake.h>
+using namespace fakeit;
+#else
 #include <Arduino.h>
+#endif
 
 // Test constants matching system configuration
 const float MIN_HEIGHT_CM = 50.0f;
@@ -216,6 +221,36 @@ void test_calibration_height_range(void) {
     TEST_ASSERT_FALSE(250.0f <= calib_max);
 }
 
+#ifdef NATIVE_TEST
+int main(int argc, char **argv) {
+    UNITY_BEGIN();
+    
+    // Height range validation
+    RUN_TEST(test_valid_heights_accepted);
+    RUN_TEST(test_heights_below_minimum_rejected);
+    RUN_TEST(test_heights_above_maximum_rejected);
+    RUN_TEST(test_negative_heights_rejected);
+    RUN_TEST(test_boundary_values);
+    
+    // Preset slot validation
+    RUN_TEST(test_valid_preset_slots_accepted);
+    RUN_TEST(test_invalid_preset_slots_rejected);
+    
+    // Input type validation
+    RUN_TEST(test_integer_heights_valid);
+    RUN_TEST(test_decimal_heights_valid);
+    
+    // Error response tests
+    RUN_TEST(test_invalid_height_error_code);
+    RUN_TEST(test_invalid_slot_error_code);
+    RUN_TEST(test_error_message_format);
+    
+    // Calibration validation
+    RUN_TEST(test_calibration_height_range);
+    
+    return UNITY_END();
+}
+#else
 void setup() {
     delay(2000);
     
@@ -250,3 +285,4 @@ void setup() {
 void loop() {
     // Empty
 }
+#endif
